@@ -2,18 +2,22 @@ package analysis;
 import java.io.BufferedReader;
 import java.io.Console;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -32,9 +36,10 @@ public class Parser {
 	String srcFolder = "";
 	ArrayList<File> allfiles = new ArrayList<>();
 	String fileName="";
-	public ArrayList<File> allClasses = new ArrayList<>();
 	JSONObject finalJson = new JSONObject();
-
+	
+	int diagramElements;
+	public ArrayList<File> allClasses = new ArrayList<>();
 	private static FileWriter file;
 	public static HashMap<CompilationUnit, variableRepresenter > fieldsOfClasses = new HashMap<>();
 	public static HashMap<CompilationUnit, javaMethodRepresenter > classAndMethods = new HashMap<>();
@@ -45,8 +50,9 @@ public class Parser {
 
 
 
-	public Parser(String srcFolder) {
+	public Parser(String srcFolder, int diagramElements ) {
 		this.srcFolder = srcFolder;
+		this.diagramElements= diagramElements;
 	}
 	
 	public void setJsonSkeleton()  {
@@ -61,10 +67,12 @@ public class Parser {
 
 
 			        getJavaSourceFiles(this.srcFolder, allClasses);
+			        getFilesLengthSorted(allClasses);
 					
 					for (File javafile : allClasses) {
 
 						CompilationUnit javaClass = StaticJavaParser.parse(javafile);
+						
 						complilationUnits.add(javaClass);
 						NodeList<TypeDeclaration<?>> declarationTypes = javaClass.getTypes();
 						 
@@ -77,16 +85,24 @@ public class Parser {
 						    processedClasses.add(unitToJavaFile);
 						}	
 						}	
-						
+									
 					}	
-					 for (JavaFileRepresenter lookForConnectedClasses :  processedClasses )  {
+					
+					 List<JavaFileRepresenter> methodBasedSort  = processedClasses.stream()
+                             .sorted(Comparator.comparing(JavaFileRepresenter::listOfMethods))
+                             .collect(Collectors.toList());
+
+					 for (JavaFileRepresenter lookForConnectedClasses :  methodBasedSort )  {
 						 coupledClasses.put(lookForConnectedClasses,analyzeClassCoupling(lookForConnectedClasses));
 					 }
+						if ( this.diagramElements > methodBasedSort.size() ) { 
+				        	this.diagramElements = processedClasses.size();
+				        }
 
 					    JSONArray classAndVariables = new JSONArray();
 						JSONArray connectedClasses = new JSONArray();
 						
-					for ( JavaFileRepresenter baseFiles : processedClasses ) {
+					for ( JavaFileRepresenter baseFiles : methodBasedSort ) {
 						headings= new JSONObject();
 						linkedclasses = new JSONObject();
 						JSONObject fields = new JSONObject();
@@ -105,6 +121,12 @@ public class Parser {
 					}
 						linkedclasses.put("name : " + baseFiles.getFileName(), " ConnectedTo : " + classes);
 						connectedClasses.put(linkedclasses);
+						
+						this.diagramElements --;
+						if (this.diagramElements < 1  ) {
+							break;
+						}
+			            System.out.println("here after not breaking   " );
 
 					
 					}
@@ -185,8 +207,9 @@ public class Parser {
 
 
 				 for (File javafile : listeOfFiles) {
-			        
-				BufferedReader reader = new BufferedReader(new FileReader(javafile.getName()));
+			            System.out.println("this is heen sorted  " + javafile.toString());
+			//	BufferedReader reader = new BufferedReader(new FileReader(this.srcFolder + "/" + javafile.getName()));
+			            BufferedReader reader = new BufferedReader ( new InputStreamReader(new FileInputStream(javafile)));
 				int lines = 0;
 				try {
 					while (reader.readLine() != null) lines++;
@@ -220,8 +243,8 @@ public class Parser {
 				List<TypeDeclaration<?>> Ac = c1.compUnit.getTypes();
 		        ClassOrInterfaceDeclaration Acclass = (ClassOrInterfaceDeclaration) Ac.get(0);
 		        
-					for (int i =0 ; i <processedClasses.size() ; i++)  { 
-						
+					for (int i =0 ; i < processedClasses.size() ; i++)  { 
+
 						List<TypeDeclaration<?>> Oc = processedClasses.get(i).compUnit.getTypes();
 						ClassOrInterfaceDeclaration ci = (ClassOrInterfaceDeclaration) Oc.get(0);
 			            System.out.println("class checked is " + ci.getNameAsString());
