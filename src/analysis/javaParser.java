@@ -23,7 +23,7 @@ public class javaParser {
 					    //rest of your code
 						Integer includedClasses = studentInput.nextInt();
 
-					    if(includedClasses <100 || includedClasses >1) {
+					    if(includedClasses <100 && includedClasses >1) {
 							Parser parser = new Parser(p1.toString(), includedClasses.intValue());
 							parser.javaToJSonFile();
 					    } else  {
