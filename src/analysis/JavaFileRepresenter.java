@@ -42,7 +42,9 @@ public class JavaFileRepresenter  {
     public JavaClassElement getType() {
         return JavaClassElement.Class;
     }
-
+    public Integer listOfMethods()  {
+    	return this.MethodRepresenter.getMethods().size();
+    }
 	
 }
 
