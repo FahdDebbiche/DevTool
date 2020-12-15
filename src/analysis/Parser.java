@@ -54,17 +54,10 @@ public class Parser {
 		this.srcFolder = srcFolder;
 		this.diagramElements= diagramElements;
 	}
-	
-	public void setJsonSkeleton()  {
 		
-	}
-	
 	// Method to parse java classes to json objects 
 	
 		public void javaToJSonFile () throws IOException {
-			JSONObject headings; 
-			JSONObject linkedclasses; 
-
 
 			        getJavaSourceFiles(this.srcFolder, allClasses);
 			        getFilesLengthSorted(allClasses);
@@ -72,7 +65,6 @@ public class Parser {
 					for (File javafile : allClasses) {
 
 						CompilationUnit javaClass = StaticJavaParser.parse(javafile);
-						
 						complilationUnits.add(javaClass);
 						NodeList<TypeDeclaration<?>> declarationTypes = javaClass.getTypes();
 						 
@@ -89,8 +81,8 @@ public class Parser {
 					}	
 					
 					 List<JavaFileRepresenter> methodBasedSort  = processedClasses.stream()
-                             .sorted(Comparator.comparing(JavaFileRepresenter::listOfMethods))
-                             .collect(Collectors.toList());
+                            		 .sorted(Comparator.comparing(JavaFileRepresenter::listOfMethods))
+                            		 .collect(Collectors.toList());
 
 					 for (JavaFileRepresenter lookForConnectedClasses :  methodBasedSort )  {
 						 coupledClasses.put(lookForConnectedClasses,analyzeClassCoupling(lookForConnectedClasses));
@@ -99,27 +91,30 @@ public class Parser {
 				        	this.diagramElements = processedClasses.size();
 				        }
 
-					    JSONArray classAndVariables = new JSONArray();
+					        JSONArray classAndVariables = new JSONArray();
 						JSONArray connectedClasses = new JSONArray();
 						
 					for ( JavaFileRepresenter baseFiles : methodBasedSort ) {
-						headings= new JSONObject();
-						linkedclasses = new JSONObject();
+						
+						JSONArray headings = new JSONArray(); 
+						JSONObject linkedclasses= new JSONObject(); 
+						JSONObject newfields = new JSONObject();
+						JSONArray getconnections = new JSONArray(); 
 						JSONObject fields = new JSONObject();
-						JSONObject classes = new JSONObject();
 
 						for (String field :  baseFiles.variables.getVariables()) {
-							fields.put("",field);
+							newfields.put("var",field);
 							
 						}
-						headings.put("name : " + baseFiles.getFileName(), " Fields : " + fields);
+						headings.put(newfields);
+						fields.put("name : " + baseFiles.getFileName(), " Fields : " + headings);
+
 						classAndVariables.put(headings);
 						
 						for (String connection : coupledClasses.get(baseFiles) ) {
-							classes.put("",connection);
-							
+							getconnections.put(connection);	
 					}
-						linkedclasses.put("name : " + baseFiles.getFileName(), " ConnectedTo : " + classes);
+						linkedclasses.put("name : " + baseFiles.getFileName(), " ConnectedTo " + getconnections);
 						connectedClasses.put(linkedclasses);
 						
 						this.diagramElements --;
@@ -204,8 +199,8 @@ public class Parser {
 
 
 				 for (File javafile : listeOfFiles) {
-			            System.out.println("this is heen sorted  " + javafile.toString());
-			//	BufferedReader reader = new BufferedReader(new FileReader(this.srcFolder + "/" + javafile.getName()));
+			           // System.out.println("this is heen sorted  " + javafile.toString());
+				  //BufferedReader reader = new BufferedReader(new FileReader(this.srcFolder + "/" + javafile.getName()));
 			            BufferedReader reader = new BufferedReader ( new InputStreamReader(new FileInputStream(javafile)));
 				int lines = 0;
 				try {
@@ -246,22 +241,12 @@ public class Parser {
 						ClassOrInterfaceDeclaration ci = (ClassOrInterfaceDeclaration) Oc.get(0);
 			            System.out.println("class checked is " + ci.getNameAsString());
 			            
-						if ( !(ci.getNameAsString().equals(Acclass.getNameAsString())) ) {
-							
-							 for (String matchingName : processedClasses.get(i).variables.getVariables() ) {
-							 
-						 if (matchingName.equals(Acclass.getNameAsString()))  {
-							 associations.add(ci.getNameAsString());
-					            System.out.println("class added " + ci.getNameAsString());
-
-							 break;
-						 }
-						}	
+						if ( !(ci.getNameAsString().equals(Acclass.getNameAsString())) ) {	
 							 for (String matchingName : processedClasses.get(i).importedClasses.getImportedclassesList() ) {
 								 
 								 if (matchingName.equals(Acclass.getNameAsString()))  {
 									 associations.add(ci.getNameAsString());
-									 System.out.println("class added is " + ci.getNameAsString());
+									 //System.out.println("class added is " + ci.getNameAsString());
 
 									 break;
 								 }
