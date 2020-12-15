@@ -126,9 +126,6 @@ public class Parser {
 						if (this.diagramElements < 1  ) {
 							break;
 						}
-			            System.out.println("here after not breaking   " );
-
-					
 					}
 					finalJson.put("Classes", classAndVariables);
 					finalJson.put("Connections", connectedClasses);
