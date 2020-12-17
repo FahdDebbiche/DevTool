@@ -9,14 +9,12 @@ public class javaParser {
 	
 	public static void main(String[] args) throws IOException {
 		
-		//String sourceFolder = "./../../SoftwareEvolution/src/main/java" ;
-				//try {
+				try {
 					Path p1 = Paths.get("/Users/fahd/Desktop/group7/src/main/java/org/jabref/model/groups");
 
-				//		if (args.length == 2) { 
+						//if (args.length == 2) { 
 						// Get input
 						//String sourceFolder = args[0]; 
-						//String curDir = System.getProperty(sourceFolder);  // get the current files in the source folder
 			        System.out.println("enter the number of files you want to include :");
 
 					try(Scanner studentInput = new Scanner(System.in)){
@@ -35,9 +33,9 @@ public class javaParser {
 				//	} else {
 						//System.out.println("Please provide input in correct format - <sourcefolder> <output file name>");
 				//	}
-			//	} catch (Exception e) {
-			//		System.out.println("Incorrect Input format");
-			//	}
+				} catch (Exception e) {
+					System.out.println("Incorrect Input format");
+				}
 			}
 
 	
