@@ -32,9 +32,12 @@ public class variableRepresenter extends  ModifierVisitor<Void> {
         return JavaClassElement.Variables;
     }
     
-    public List<String> getVariables() {
-        return this.fields;
-    }
+    public List<String> getVariables( Boolean value) {
+    
+    	if (value) {
+            return this.fields;   
+    	} 
+    	return this.nonPrimitiveFields ;
     
 
 }
