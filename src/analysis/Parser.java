@@ -37,9 +37,13 @@ public class Parser {
 	ArrayList<File> allfiles = new ArrayList<>();
 	String fileName="";
 	JSONObject finalJson = new JSONObject();
-	
+	public Boolean NonPrim = false;
+	public Boolean PrimitiveType = true;
+
 	int diagramElements;
 	public ArrayList<File> allClasses = new ArrayList<>();
+	public ArrayList<File> sortedClasses = new ArrayList<>();
+
 	private static FileWriter file;
 	public static HashMap<CompilationUnit, variableRepresenter > fieldsOfClasses = new HashMap<>();
 	public static HashMap<CompilationUnit, javaMethodRepresenter > classAndMethods = new HashMap<>();
@@ -60,9 +64,9 @@ public class Parser {
 		public void javaToJSonFile () throws IOException {
 
 			        getJavaSourceFiles(this.srcFolder, allClasses);
-			        getFilesLengthSorted(allClasses);
+			        sortedClasses = getFilesLengthSorted(allClasses);
 					
-					for (File javafile : allClasses) {
+					for (File javafile : sortedClasses) {
 
 						CompilationUnit javaClass = StaticJavaParser.parse(javafile);
 						complilationUnits.add(javaClass);
@@ -70,31 +74,34 @@ public class Parser {
 						 
 						for (TypeDeclaration<?> b : declarationTypes) {						
 						if ( b instanceof ClassOrInterfaceDeclaration)  {
-							//ClassOrInterfaceDeclaration classOnly =  (ClassOrInterfaceDeclaration) declarationTypes.get(0); 
-							processSyntax(javaClass);	
+						    
+						    processSyntax(javaClass);	
 						    JavaFileRepresenter unitToJavaFile  = new JavaFileRepresenter(javaClass, classAndMethods.get(javaClass), 
 							   fieldsOfClasses.get(javaClass), importedClasses.get(javaClass) );
 						    processedClasses.add(unitToJavaFile);
+						    unitToJavaFile.variables.nonPrimitiveFields = referenceTypeFinder(javaClass);
+
 						}	
 						}	
 									
 					}	
 					
-					 List<JavaFileRepresenter> methodBasedSort  = processedClasses.stream()
-                            		 .sorted(Comparator.comparing(JavaFileRepresenter::listOfMethods))
-                            		 .collect(Collectors.toList());
-
-					 for (JavaFileRepresenter lookForConnectedClasses :  methodBasedSort )  {
+					 //List<JavaFileRepresenter> methodBasedSort  = processedClasses.stream()
+                            		 //.sorted(Comparator.comparing(JavaFileRepresenter::listOfMethods))
+                            		 //.collect(Collectors.toList());
+					Collections.reverse(processedClasses);
+			
+					 for (JavaFileRepresenter lookForConnectedClasses :  processedClasses )  {
 						 coupledClasses.put(lookForConnectedClasses,analyzeClassCoupling(lookForConnectedClasses));
 					 }
-						if ( this.diagramElements > methodBasedSort.size() ) { 
+						if ( this.diagramElements > processedClasses.size() ) { 
 				        	this.diagramElements = processedClasses.size();
 				        }
 
 					        JSONArray classAndVariables = new JSONArray();
 						JSONArray connectedClasses = new JSONArray();
 						
-					for ( JavaFileRepresenter baseFiles : methodBasedSort ) {
+					for ( JavaFileRepresenter baseFiles : processedClasses ) {
 						
 						JSONArray headings = new JSONArray(); 
 						JSONObject linkedclasses= new JSONObject(); 
@@ -102,7 +109,7 @@ public class Parser {
 						JSONArray getconnections = new JSONArray(); 
 						JSONObject fields = new JSONObject();
 
-						for (String field :  baseFiles.variables.getVariables()) {
+						for (String field :  baseFiles.variables.getVariables(PrimitiveType)) {
 							newfields.put("var",field);
 							
 						}
@@ -152,9 +159,22 @@ public class Parser {
 				      }
 				      }
 				
+		public static List<String> referenceTypeFinder (CompilationUnit cu) throws FileNotFoundException  {
+			
+			List<String> output = new ArrayList<String>();
+			
+						 cu.findAll(FieldDeclaration.class).forEach(ae -> {
+							if (  !(ae.getElementType().isPrimitiveType()))  {
+								
+								output.add(ae.getElementType().asReferenceType().toString());
+							 }
+							  });							
+						 
+						 return output ;
+					} 
 		public static void processSyntax (CompilationUnit c1 )   {
 			
-			VoidVisitorAdapter<Void> methodeVisitor = new javaMethodRepresenter();
+			 VoidVisitorAdapter<Void> methodeVisitor = new javaMethodRepresenter();
 			 methodeVisitor.visit(c1, null);
 			 classAndMethods.put(c1, (javaMethodRepresenter) methodeVisitor);
 			 
@@ -163,8 +183,8 @@ public class Parser {
 			 fieldsOfClasses.put(c1, (variableRepresenter) fieldvisitor);	
 			 
 			 VoidVisitorAdapter<?> importVisitor = new ImportedClasses();
-		     importVisitor.visit(c1, null);
-		     importedClasses.put(c1, (ImportedClasses) importVisitor);	
+		         importVisitor.visit(c1, null);
+		         importedClasses.put(c1, (ImportedClasses) importVisitor);	
 
 	 }		
 
@@ -179,7 +199,6 @@ public class Parser {
 					getJavaSourceFiles(file.getAbsolutePath().toString(),allclasses);
 			    } else {
 			    	//String [] extension =  file.getName().split(".");
-			    	
 				    if (file.getName().endsWith(".java") &&  !(file.getName().startsWith("module-info"))) {
 				    	allClasses.add(file);
 
@@ -193,15 +212,12 @@ public class Parser {
 
 			public ArrayList<File> getFilesLengthSorted(ArrayList<File> listeOfFiles) throws IOException {
 				
-				HashMap<File, Integer> filelength = new HashMap<File, Integer>();
-				List<Map.Entry<File, Integer>> list = new LinkedList<Map.Entry<File, Integer>>(filelength.entrySet());  
+				HashMap<Integer, File > filelength = new HashMap<Integer, File>();
 				ArrayList<File> sortedFiled = new ArrayList<>();
 
-
 				 for (File javafile : listeOfFiles) {
-			           // System.out.println("this is heen sorted  " + javafile.toString());
-				  //BufferedReader reader = new BufferedReader(new FileReader(this.srcFolder + "/" + javafile.getName()));
 			            BufferedReader reader = new BufferedReader ( new InputStreamReader(new FileInputStream(javafile)));
+
 				int lines = 0;
 				try {
 					while (reader.readLine() != null) lines++;
@@ -209,29 +225,31 @@ public class Parser {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				filelength.put(javafile, lines);
+				filelength.put(lines, javafile);
 				reader.close();
 			}
-				//sorting the list elements  
-				 Collections.sort(list , new Comparator<Map.Entry<File, Integer> >() { 
-			            public int compare(Map.Entry<File, Integer> file1,  
-			                               Map.Entry<File, Integer> file2) 
-			            { 
-			                return (file1.getValue()).compareTo(file1.getValue()); 
-			            } 
-			        }); 
-			          
-			        // put data from sorted list to hashmap  
-			        for (Map.Entry<File, Integer> file : list) { 
-			        	filelength.put(file.getKey(), file.getValue()); 
-			        	sortedFiled.add(file.getKey());
-			        } 
+
+				 Iterator <Integer> linesOfCode = filelength.keySet().iterator();         
+				 while(linesOfCode.hasNext())  
+				 {  
+				 int value =(int)linesOfCode.next();  
+				 }  
+				 //using TreeMap constructor to sort the HashMap  
+				 TreeMap<Integer, File> tm=new  TreeMap<Integer, File> (filelength);  
+				 Iterator itr=tm.keySet().iterator();               
+				 while(itr.hasNext())    
+				 {    
+				 int value=(int)itr.next(); 
+				 sortedFiled.add(filelength.get(value));
+
+				 }    
+
 			        return sortedFiled; 
 			    } 
 			
 			public List<String> analyzeClassCoupling (JavaFileRepresenter c1) {
 				
-				List<String> associations = new ArrayList<String>();
+			List<String> associations = new ArrayList<String>();
 				List<TypeDeclaration<?>> Ac = c1.compUnit.getTypes();
 		        ClassOrInterfaceDeclaration Acclass = (ClassOrInterfaceDeclaration) Ac.get(0);
 		        
@@ -239,16 +257,20 @@ public class Parser {
 
 						List<TypeDeclaration<?>> Oc = processedClasses.get(i).compUnit.getTypes();
 						ClassOrInterfaceDeclaration ci = (ClassOrInterfaceDeclaration) Oc.get(0);
-			            System.out.println("class checked is " + ci.getNameAsString());
 			            
-						if ( !(ci.getNameAsString().equals(Acclass.getNameAsString())) ) {	
-							 for (String matchingName : processedClasses.get(i).importedClasses.getImportedclassesList() ) {
-								 
-								 if (matchingName.equals(Acclass.getNameAsString()))  {
+						if ( !(ci.getNameAsString().equals(Acclass.getNameAsString())) ) {
+							
+							 for (String matchingName : processedClasses.get(i).variables.getVariables(NonPrim) ) {	 
+								 if (matchingName.startsWith(Acclass.getNameAsString()) ) {	
 									 associations.add(ci.getNameAsString());
-									 //System.out.println("class added is " + ci.getNameAsString());
+						            System.out.println("class added " + ci.getNameAsString());
+						 } 
+						}	
+							 for (String matchingName : processedClasses.get(i).importedClasses.getImportedclassesList() ) {
 
-									 break;
+								 if ((matchingName.toString()).equals(Acclass.getNameAsString()))  {
+									 associations.add(ci.getNameAsString());
+									 //System.out.println( " in " + Acclass.getNameAsString() + " class added is " + ci.getNameAsString());
 								 }
 								}	 
 					}
