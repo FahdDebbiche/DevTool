@@ -11,8 +11,9 @@ import com.github.javaparser.ast.visitor.ModifierVisitor;
 public class variableRepresenter extends  ModifierVisitor<Void> {
 	
 	List <String > fields = new ArrayList<>();
+	List <String > nonPrimitiveFields = new ArrayList<>(); 
 	 
-	@Override
+	@Override 
 	  public FieldDeclaration visit(FieldDeclaration variables, Void arg) {
           super.visit(variables, arg);
           variables.getVariables().forEach(v ->
@@ -25,7 +26,7 @@ public class variableRepresenter extends  ModifierVisitor<Void> {
 				
 				fields.add( ((VariableDeclarator) node).getType().toString() + ":" + ((VariableDeclarator) node).getName().toString());
 			}
-             return variables;
+             return variables; 
 
   } 
     public JavaClassElement getType() {
@@ -38,6 +39,6 @@ public class variableRepresenter extends  ModifierVisitor<Void> {
             return this.fields;   
     	} 
     	return this.nonPrimitiveFields ;
-    
-
 }
+    
+} 
