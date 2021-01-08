@@ -18,9 +18,12 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.8.1</version>
         <configuration>
+         <includes>
+ 		<include>**/AllTests.java</include>
+		</includes> 
           <release>14</release>
         </configuration>
-      </plugin>
+      </plugin>       
     </plugins>
   </build>
   <dependencies> 

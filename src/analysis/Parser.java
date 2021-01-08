@@ -86,7 +86,6 @@ public class Parser {
 						}	
 									
 					}	
-					
 					 //List<JavaFileRepresenter> methodBasedSort  = processedClasses.stream()
                             		 //.sorted(Comparator.comparing(JavaFileRepresenter::listOfMethods))
                             		 //.collect(Collectors.toList());
@@ -309,5 +308,10 @@ public class Parser {
 				return this.fileName;
 				}		
 			
-			
-}
+			public Integer getprocessedClassesSize () {
+				 return Parser.processedClasses.size();
+			}
+			public Integer returnprocessedFiles () {
+				return this.allClasses.size();
+			}
+ }
